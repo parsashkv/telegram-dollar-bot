@@ -4,7 +4,7 @@ import re
 
 
 def get_dollar_price():
-    url = "https://www.tgju.org/profile/price_dollar_rl"
+    url = "https://alanchand.com/currencies-price/usd"
 
     try:
         response = requests.get(url, timeout=10)
@@ -13,18 +13,18 @@ def get_dollar_price():
         soup = BeautifulSoup(response.text, "html.parser")
         text = soup.get_text(" ", strip=True)
 
-        index = text.find("نرخ فعلی")
+        index = text.find("قیمت فروش دلار آمریکا")
 
         if index == -1:
             return None
 
         result = text[index:index + 100]
 
-        match = re.search(r"نرخ فعلی::\s*([\d,]+)", result)
+        match = re.search(r"قیمت فروش دلار آمریکا\s*([\d,،]+)", result)
 
         if match:
-            price_rial = int(match.group(1).replace(",", ""))
-            return price_rial // 10
+            price = match.group(1).replace(",", "").replace("،", "")
+            return int(price)
 
         return None
 
