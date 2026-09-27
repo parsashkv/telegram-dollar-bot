@@ -10,7 +10,34 @@ from sources.tgju import get_dollar_price as get_tgju_price
 from sources.alanchand import get_dollar_price as get_alanchand_price
 from sources.bitpin import get_dollar_price as get_bitpin_price
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = """
+💵 Telegram Dollar Check
 
+قیمت دلار آزاد را از چند منبع دریافت می‌کنم.
+
+برای دریافت قیمت:
+ /price
+
+برای راهنما:
+ /help
+"""
+
+    await update.message.reply_text(message)
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = """
+📌 راهنمای ربات
+
+/price
+دریافت قیمت دلار از چند منبع
+
+/help
+نمایش این راهنما
+"""
+
+    await update.message.reply_text(message)
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def get_price_with_time(getter):
         price = await asyncio.to_thread(getter)
@@ -66,7 +93,8 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
-
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("price", price))
 
     print("Bot is running...")
