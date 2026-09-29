@@ -6,9 +6,49 @@ from datetime import datetime
 import asyncio
 
 from config import BOT_TOKEN
-from sources.tgju import get_dollar_price as get_tgju_price
-from sources.alanchand import get_dollar_price as get_alanchand_price
-from sources.bitpin import get_dollar_price as get_bitpin_price
+from sources.tgju import get_price as get_tgju_price
+from sources.alanchand import get_price as get_alanchand_price
+from sources.bitpin import get_price as get_bitpin_price
+from statistics import median
+
+CURRENCIES = {
+    "usd": {
+        "name": "دلار",
+        "sources": [
+            {"name": "TGJU", "getter": get_tgju_price},
+            {"name": "AlanChand", "getter": get_alanchand_price},
+            {"name": "Bitpin", "getter": get_bitpin_price},
+        ]
+    },
+
+    "eur": {
+        "name": "یورو",
+        "sources": [
+            {"name": "TGJU", "getter": get_tgju_price},
+            {"name": "AlanChand", "getter": get_alanchand_price},
+            {"name": "Bitpin", "getter": get_bitpin_price},
+        ]
+    },
+
+    "gbp": {
+        "name": "پوند",
+        "sources": [
+            {"name": "TGJU", "getter": get_tgju_price},
+            {"name": "AlanChand", "getter": get_alanchand_price},
+            {"name": "Bitpin", "getter": get_bitpin_price},
+        ]
+    },
+
+    "aed": {
+        "name": "درهم",
+        "sources": [
+            {"name": "TGJU", "getter": get_tgju_price},
+            {"name": "AlanChand", "getter": get_alanchand_price},
+            {"name": "Bitpin", "getter": get_bitpin_price},
+        ]
+    }
+}
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = """
@@ -38,58 +78,65 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
 
     await update.message.reply_text(message)
-async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    async def get_price_with_time(getter):
-        price = await asyncio.to_thread(getter)
-        received_at = datetime.now().strftime("%H:%M:%S")
-        return price, received_at
 
-    (
-        (tgju_price, tgju_time),
-        (alanchand_price, alanchand_time),
-        (bitpin_price, bitpin_time)
-    ) = await asyncio.gather(
-        get_price_with_time(get_tgju_price),
-        get_price_with_time(get_alanchand_price),
-        get_price_with_time(get_bitpin_price)
-    )
+
+async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text(
+            "لطفاً ارز مورد نظر را وارد کنید.\nمثال: /price usd"
+        )
+        return
+
+    currency = context.args[0].lower()
+
+    if currency not in CURRENCIES:
+        await update.message.reply_text("این ارز پشتیبانی نمی‌شود.")
+        return
+
+    sources = CURRENCIES[currency]["sources"]
+    currency_name = CURRENCIES[currency]["name"]
+
+    async def get_price_with_time(getter, currency):
+        try:
+            price = await asyncio.to_thread(getter, currency)
+            received_at = datetime.now().strftime("%H:%M:%S")
+            return price, received_at
+        except Exception:
+            received_at = datetime.now().strftime("%H:%M:%S")
+            return None, received_at
+
+    tasks = [
+        get_price_with_time(source["getter"], currency)
+        for source in sources
+    ]
+    results = await asyncio.gather(*tasks)
 
     prices = [
-        price for price in [tgju_price, alanchand_price, bitpin_price]
+        price for price, received_at in results
         if price is not None
     ]
 
-    message = "💵 قیمت دلار آزاد:\n\n"
+    message = f"💵 قیمت {currency_name} آزاد:\n\n"
 
-    if tgju_price:
-        message += f"TGJU: {tgju_price:,} تومان\n"
-        message += f"🕐 دریافت: {tgju_time}\n\n"
-    else:
-        message += "TGJU: ❌ دریافت نشد\n\n"
-
-    if alanchand_price:
-        message += f"AlanChand: {alanchand_price:,} تومان\n"
-        message += f"🕐 دریافت: {alanchand_time}\n\n"
-    else:
-        message += "AlanChand: ❌ دریافت نشد\n\n"
-
-    if bitpin_price:
-        message += f"Bitpin: {bitpin_price:,} تومان\n"
-        message += f"🕐 دریافت: {bitpin_time}\n"
-    else:
-        message += "Bitpin: ❌ دریافت نشد\n"
+    for source, (price, received_at) in zip(sources, results):
+        source_name = source["name"]
+        if price is not None:
+            message += f"{source_name}: {price:,} تومان\n"
+            message += f"🕐 دریافت: {received_at}\n\n"
+        else:
+            message += f"{source_name}: ❌ دریافت نشد\n\n"
 
     if len(prices) >= 2:
         difference = max(prices) - min(prices)
-        message += f"\n📊 اختلاف منابع: {difference:,} تومان"
+        message += f"📊 اختلاف منابع: {difference:,} تومان"
 
-    if len(prices) == 3:
-        sorted_prices = sorted(prices)
-        median = sorted_prices[1]
-        message += f"\n📌 میانه قیمت‌ها: {median:,} تومان"
+    if prices:
+        median_price = median(prices)
+        message += f"\n📌 میانه قیمت‌ها: {median_price:,.0f} تومان"
+
+
 
     await update.message.reply_text(message)
-
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()

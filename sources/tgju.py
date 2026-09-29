@@ -2,9 +2,19 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+CURRENCY_URLS = {
+    "usd": "https://www.tgju.org/profile/price_dollar_rl",
+    "eur": "https://www.tgju.org/profile/price_eur",
+    "gbp": "https://www.tgju.org/profile/price_gbp",
+    "aed": "https://www.tgju.org/profile/price_aed",
+}
 
-def get_dollar_price():
-    url = "https://www.tgju.org/profile/price_dollar_rl"
+
+def get_price(currency):
+    url = CURRENCY_URLS.get(currency)
+    if not url:
+        return None
+
 
     try:
         response = requests.get(url, timeout=10)
@@ -30,3 +40,4 @@ def get_dollar_price():
 
     except requests.RequestException:
         return None
+
