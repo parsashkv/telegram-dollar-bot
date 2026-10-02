@@ -1,6 +1,6 @@
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-
+from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from datetime import datetime
 import asyncio
@@ -10,6 +10,7 @@ from sources.tgju import get_price as get_tgju_price
 from sources.alanchand import get_price as get_alanchand_price
 from sources.bitpin import get_price as get_bitpin_price
 from statistics import median
+from sources.exiraz import get_price as get_exiraz_price
 
 CURRENCIES = {
     "usd": {
@@ -46,20 +47,52 @@ CURRENCIES = {
             {"name": "AlanChand", "getter": get_alanchand_price},
             {"name": "Bitpin", "getter": get_bitpin_price},
         ]
+    },
+    "bahar": {
+        "name": "سکه بهار آزادی",
+        "sources": [
+            {"name": "ExirAz", "getter": get_exiraz_price},
+        ]
+    },
+
+    "half": {
+        "name": "نیم سکه",
+        "sources": [
+            {"name": "ExirAz", "getter": get_exiraz_price},
+        ]
+    },
+
+    "quarter": {
+        "name": "ربع سکه",
+        "sources": [
+            {"name": "ExirAz", "getter": get_exiraz_price},
+        ]
+    },
+
+    "gram_coin": {
+        "name": "سکه گرمی",
+        "sources": [
+            {"name": "ExirAz", "getter": get_exiraz_price},
+        ]
     }
 }
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = """
-💵 Telegram Dollar Check
+💰 Telegram Price Check
 
-قیمت دلار آزاد را از چند منبع دریافت می‌کنم.
+قیمت ارزها و سکه‌ها را از منابع مختلف دریافت می‌کنم.
 
 برای دریافت قیمت:
- /price
+ /price <نام>
 
-برای راهنما:
+مثال:
+ /price usd
+ /price eur
+ /price bahar
+
+برای مشاهده راهنما:
  /help
 """
 
@@ -70,14 +103,25 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = """
 📌 راهنمای ربات
 
-/price
-دریافت قیمت دلار از چند منبع
+💵 ارزها:
+/price usd    دلار
+/price eur    یورو
+/price gbp    پوند
+/price aed    درهم
 
-/help
-نمایش این راهنما
+🪙 سکه‌ها:
+/price bahar       سکه بهار آزادی
+/price half        نیم سکه
+/price quarter     ربع سکه
+/price gram_coin   سکه گرمی
+
+مثال:
+ /price usd
+ /price bahar
 """
 
     await update.message.reply_text(message)
+
 
 
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,10 +145,10 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
             price = await asyncio.to_thread(getter, currency)
             received_at = datetime.now().strftime("%H:%M:%S")
             return price, received_at
-        except Exception:
+        except Exception as e:
+            print(f"ERROR: {e}")
             received_at = datetime.now().strftime("%H:%M:%S")
             return None, received_at
-
     tasks = [
         get_price_with_time(source["getter"], currency)
         for source in sources

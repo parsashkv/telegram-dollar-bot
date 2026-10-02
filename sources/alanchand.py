@@ -50,3 +50,49 @@ def get_price(currency):
         return None
 
 
+
+GOLD_NAMES = {
+    "emami": "سکه امامی (طرح جدید)",
+    "bahar": "سکه بهار آزادی",
+    "half": "نیم سکه",
+    "quarter": "ربع سکه",
+    "gram_coin": "سکه گرمی",
+    "gold_18": "گرم طلای 18 عیار",
+}
+
+
+def get_gold_price(product):
+    product_name = GOLD_NAMES.get(product)
+
+    if not product_name:
+        return None
+
+    url = "https://alanchand.com/gold-price"
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        text = soup.get_text(" ", strip=True)
+
+        index = text.find(product_name)
+
+        if index == -1:
+            return None
+
+        result = text[index:index + 150]
+
+        match = re.search(
+            r"([\d,،]+)\s*تومان",
+            result
+        )
+
+        if match:
+            price = match.group(1).replace(",", "").replace("،", "")
+            return int(price)
+
+        return None
+
+    except requests.RequestException:
+        return None
