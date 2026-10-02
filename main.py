@@ -1,6 +1,6 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 
 from datetime import datetime
 import asyncio
@@ -77,6 +77,50 @@ CURRENCIES = {
     }
 }
 
+def get_price_keyboard():
+    keyboard = [
+        [
+            InlineKeyboardButton("💵 دلار", callback_data="usd"),
+            InlineKeyboardButton("💶 یورو", callback_data="eur"),
+        ],
+        [
+            InlineKeyboardButton("💷 پوند", callback_data="gbp"),
+            InlineKeyboardButton("🇦🇪 درهم", callback_data="aed"),
+        ],
+        [
+            InlineKeyboardButton("🪙 بهار آزادی", callback_data="bahar"),
+            InlineKeyboardButton("🪙 نیم سکه", callback_data="half"),
+        ],
+        [
+            InlineKeyboardButton("🪙 ربع سکه", callback_data="quarter"),
+            InlineKeyboardButton("🪙 سکه گرمی", callback_data="gram_coin"),
+        ],
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+def get_price_keyboard():
+    keyboard = [
+        [
+            InlineKeyboardButton("💵 دلار", callback_data="usd"),
+            InlineKeyboardButton("💶 یورو", callback_data="eur"),
+        ],
+        [
+            InlineKeyboardButton("💷 پوند", callback_data="gbp"),
+            InlineKeyboardButton("🇦🇪 درهم", callback_data="aed"),
+        ],
+        [
+            InlineKeyboardButton("🪙 بهار آزادی", callback_data="bahar"),
+            InlineKeyboardButton("🪙 نیم سکه", callback_data="half"),
+        ],
+        [
+            InlineKeyboardButton("🪙 ربع سکه", callback_data="quarter"),
+            InlineKeyboardButton("🪙 سکه گرمی", callback_data="gram_coin"),
+        ],
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = """
@@ -84,19 +128,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 قیمت ارزها و سکه‌ها را از منابع مختلف دریافت می‌کنم.
 
-برای دریافت قیمت:
- /price <نام>
-
-مثال:
- /price usd
- /price eur
- /price bahar
-
-برای مشاهده راهنما:
- /help
+👇 قیمت مورد نظر خود را انتخاب کنید:
 """
 
-    await update.message.reply_text(message)
+    await update.message.reply_text(
+        message,
+        reply_markup=get_price_keyboard()
+    )
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    await query.answer()
+
+    currency = query.data
+
+    context.args = [currency]
+
+    await price(update, context)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -180,13 +229,18 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-    await update.message.reply_text(message)
+    if update.message:
+        await update.message.reply_text(message)
+    else:
+        await update.callback_query.message.reply_text(message)
+
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("price", price))
+    app.add_handler(CallbackQueryHandler(button_handler))
 
     print("Bot is running...")
     app.run_polling()
