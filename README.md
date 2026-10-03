@@ -87,20 +87,24 @@ The exact values depend on the current market and source availability.
 * **Render**
 
 ## Project Structure
-
-```text
 telegram-dollar-bot/
 │
 ├── main.py
 ├── requirements.txt
 ├── .gitignore
+├── README.md
 │
-├── sources/
-│   ├── ...
-│   └── ...
-│
-└── README.md
-```
+└── sources/
+    ├── tgju.py
+    ├── alanchand.py
+    ├── bitpin.py
+    └── exiraz.py
+
+The sources package contains the individual implementations used to fetch currency, coin, and gold prices from different online sources.
+
+main.py handles the Telegram bot, user commands, inline keyboards, and coordinates the price data returned by the source modules.
+
+
 
 The `sources` package contains the individual price-fetching implementations, while `main.py` handles the Telegram bot and coordinates the returned data.
 
