@@ -5,7 +5,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQuer
 from datetime import datetime
 import asyncio
 
-from config import BOT_TOKEN
 from sources.tgju import get_price as get_tgju_price
 from sources.alanchand import get_price as get_alanchand_price
 from sources.bitpin import get_price as get_bitpin_price
@@ -14,6 +13,7 @@ from sources.exiraz import get_price as get_exiraz_price
 
 import os
 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CURRENCIES = {
     "usd": {
