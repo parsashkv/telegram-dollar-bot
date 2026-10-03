@@ -5,4 +5,3 @@ config.py
 .env
 .idea/
 tgju_test.py
-.idea/

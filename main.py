@@ -12,6 +12,9 @@ from sources.bitpin import get_price as get_bitpin_price
 from statistics import median
 from sources.exiraz import get_price as get_exiraz_price
 
+import os
+
+
 CURRENCIES = {
     "usd": {
         "name": "دلار",
@@ -77,27 +80,6 @@ CURRENCIES = {
     }
 }
 
-def get_price_keyboard():
-    keyboard = [
-        [
-            InlineKeyboardButton("💵 دلار", callback_data="usd"),
-            InlineKeyboardButton("💶 یورو", callback_data="eur"),
-        ],
-        [
-            InlineKeyboardButton("💷 پوند", callback_data="gbp"),
-            InlineKeyboardButton("🇦🇪 درهم", callback_data="aed"),
-        ],
-        [
-            InlineKeyboardButton("🪙 بهار آزادی", callback_data="bahar"),
-            InlineKeyboardButton("🪙 نیم سکه", callback_data="half"),
-        ],
-        [
-            InlineKeyboardButton("🪙 ربع سکه", callback_data="quarter"),
-            InlineKeyboardButton("🪙 سکه گرمی", callback_data="gram_coin"),
-        ],
-    ]
-
-    return InlineKeyboardMarkup(keyboard)
 
 
 def get_price_keyboard():
@@ -111,12 +93,12 @@ def get_price_keyboard():
             InlineKeyboardButton("🇦🇪 درهم", callback_data="aed"),
         ],
         [
-            InlineKeyboardButton("🪙 بهار آزادی", callback_data="bahar"),
-            InlineKeyboardButton("🪙 نیم سکه", callback_data="half"),
+            InlineKeyboardButton("🌕 بهار آزادی", callback_data="bahar"),
+            InlineKeyboardButton("🌕 نیم سکه", callback_data="half"),
         ],
         [
-            InlineKeyboardButton("🪙 ربع سکه", callback_data="quarter"),
-            InlineKeyboardButton("🪙 سکه گرمی", callback_data="gram_coin"),
+            InlineKeyboardButton("🌕 ربع سکه", callback_data="quarter"),
+            InlineKeyboardButton("🌕 سکه گرمی", callback_data="gram_coin"),
         ],
     ]
 
@@ -158,7 +140,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /price gbp    پوند
 /price aed    درهم
 
-🪙 سکه‌ها:
+🌕 سکه‌ها:
 /price bahar       سکه بهار آزادی
 /price half        نیم سکه
 /price quarter     ربع سکه
@@ -235,15 +217,33 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.callback_query.message.reply_text(message)
 
 
+
+
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("price", price))
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("Bot is running...")
-    app.run_polling()
+    mode = os.getenv("BOT_MODE", "polling")
+
+    print(f"Bot is running in {mode} mode...")
+
+    if mode == "webhook":
+        port = int(os.getenv("PORT", "8080"))
+        render_url = os.getenv("RENDER_URL")
+
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=BOT_TOKEN,
+            webhook_url=f"{render_url}/{BOT_TOKEN}",
+        )
+
+    else:
+        app.run_polling()
 
 
 if __name__ == "__main__":
