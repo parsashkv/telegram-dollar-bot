@@ -3,6 +3,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQuer
 
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import asyncio
 
 from sources.tgju import get_price as get_tgju_price
@@ -174,7 +175,7 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def get_price_with_time(getter, currency):
         try:
             price = await asyncio.to_thread(getter, currency)
-            received_at = datetime.now().strftime("%H:%M:%S")
+            received_at = datetime.now(ZoneInfo("Asia/Tehran")).strftime("%H:%M:%S")
             return price, received_at
         except Exception as e:
             print(f"ERROR: {e}")
